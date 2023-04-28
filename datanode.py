@@ -1,6 +1,6 @@
 from typing import Any, List, Union  # using for pylint
 
-__version__ = "3.5.1"
+__version__ = "3.5.2"
 
 
 class ListNode:
@@ -8,6 +8,7 @@ class ListNode:
         self.val: Any = value
         self.next: Union[ListNode, None] = None
         self.up: Union[ListNode, None] = None
+        return
 
     def __iter__(self):
         class __ListNode_Iter:
@@ -31,33 +32,48 @@ class ListNode:
             except:
                 raise TypeError(f'{type(__value)} is not supported')
         self.__dict__[__name] = __value
+        return
 
-    def __str__(self):
+    def __str__(self) -> str:
         next_doc = f"<ListNode id={id(self.next)}>" if self.next is not None else "None"
         up_doc = f"<ListNode id={id(self.up)}>" if self.up is not None else "None"
         return f'ListNode(value:{self.val} , next:{next_doc} , up:{up_doc})'
 
-    def __add__(self, other):
+    def __add__(self, other:"ListNode") -> "ListNode":
         __l1 = ListNode.tolist(self)
         __l2 = ListNode.tolist(other)
         return ListNode.createByList(__l1+__l2)
 
-    def __sub__(self, other):
+    def __sub__(self, other:"ListNode") -> "ListNode":
         __l1 = ListNode.tolist(self)
         __l2 = ListNode.tolist(other)
-        return ListNode.createByList([x for x in list({*__l1} ^ {*__l2}) if x not in __l2])
+        return ListNode.createByList([x for x in __l1 if x not in __l2])
+
+    def delete(self) -> "ListNode":
+        _node = None
+        if self.up is not None:
+            self.up.next = self.next
+            if self.next is not None:
+                _node = self.next
+            else:
+                _node = self.up
+        else:
+            self.next.up = None
+            _node = self.next
+        del self
+        return _node
 
     def tolist(self) -> list:
         next = self.next
-        vals = [self.val]
+        vals = list(self.val)
         while next:
             vals.append(next.val)
         return vals
 
     @staticmethod
-    def create(node_num: int, values: list = []) -> "ListNode":
+    def create(node_num: int, values: list = [],*,default=None) -> "ListNode":
         while len(values) < node_num:
-            values.append(None)
+            values.append(default)
         first_node = ListNode(values[0])
         up_node = first_node
         for val in range(1, node_num):
@@ -71,18 +87,19 @@ class ListNode:
         return ListNode.create(len(values), values)
 
 class TreeNode:
-    def __init__(self, value=None):
+    def __init__(self, value=None) -> None:
         self.val = value
         self.next: list[TreeNode] = []
         self.up: Union[TreeNode, None] = None
+        return
 
     @property
-    def nodes(self):
+    def childnum(self) -> int:
         return len(self.next)
 
-    def delNode(self, index: int):
-        self.next[index].up = None
+    def delNode(self, index: int) -> "TreeNode":
         self.next = self.next[:index]+self.next[index+1:]
+        return self
 
     def __setattr__(self, __name, __value) -> None:
         if __name == 'next' and __value != []:
@@ -101,9 +118,10 @@ class TreeNode:
                     raise TypeError(f'{type(__value)} is not supported')
             self._nodes = len(self.next)
         self.__dict__[__name] = __value
+        return
 
     @staticmethod
-    def create(levels: int, values: Union[list, None] = None, child: Union[List[int], None] = None) -> "TreeNode":
+    def create(levels: int, values: Union[list, None] = None, child: Union[List[int], None] = None,*,default = None) -> "TreeNode":
         '''
         Args:
             levels: The level of new TreeNode
@@ -113,10 +131,9 @@ class TreeNode:
                     Defaults to None.
         '''
         if child is None:
-            child = [0 for _ in range(levels)]
+            child = [0]*len(levels)
         if values is None:
-            values = [[None for _ in range(child[level])]
-                      for level in range(levels)]
+            values = [[default]*child[level] for level in range(levels)]
         first_node = TreeNode(values[0])
         up_node = first_node
         for level in range(1, levels):
@@ -128,7 +145,7 @@ class TreeNode:
         return first_node
 
     @staticmethod
-    def createByList(values: list):
+    def createByList(values: list) -> "TreeNode":
         return TreeNode.create(len(values), values)
 
     def __str__(self):
