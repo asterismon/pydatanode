@@ -1,6 +1,6 @@
-from typing import Any, List, Union  # using for pylint
+from typing import Any, List, Union
 
-__version__ = "3.5.2"
+__version__ = "3.5.5"
 
 
 class ListNode:
@@ -40,14 +40,14 @@ class ListNode:
         return f'ListNode(value:{self.val} , next:{next_doc} , up:{up_doc})'
 
     def __add__(self, other:"ListNode") -> "ListNode":
-        __l1 = ListNode.tolist(self)
-        __l2 = ListNode.tolist(other)
-        return ListNode.createByList(__l1+__l2)
+        _left = ListNode.tolist(self)
+        _right = ListNode.tolist(other)
+        return ListNode.createByList(_left+_right)
 
     def __sub__(self, other:"ListNode") -> "ListNode":
-        __l1 = ListNode.tolist(self)
-        __l2 = ListNode.tolist(other)
-        return ListNode.createByList([x for x in __l1 if x not in __l2])
+        _left = ListNode.tolist(self)
+        _right = ListNode.tolist(other)
+        return ListNode.createByList([x for x in _left if x not in _right])
 
     def delete(self) -> "ListNode":
         _node = None
@@ -71,7 +71,7 @@ class ListNode:
         return vals
 
     @staticmethod
-    def create(node_num: int, values: list = [],*,default=None) -> "ListNode":
+    def create(node_num: int, values: list = list(),*,default=None) -> "ListNode":
         while len(values) < node_num:
             values.append(default)
         first_node = ListNode(values[0])
@@ -102,7 +102,7 @@ class TreeNode:
         return self
 
     def __setattr__(self, __name, __value) -> None:
-        if __name == 'next' and __value != []:
+        if __name == 'next' and len(__value) != 0:
             try:
                 for node in __value:
                     try:
@@ -179,7 +179,7 @@ class TreeNode:
                 if __now_depth >= max_depth:
                     return None
             child: list[TreeNode] = []
-            if node_list == []:
+            if len(node_list) == 0:
                 return None
             for node in node_list:
                 if node.val == value:
