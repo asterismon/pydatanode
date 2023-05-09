@@ -1,7 +1,7 @@
 from typing import Any, List, Union
 
 __version__ = "3.5.8"
-
+#TODO 检查有无方法应为类方法而非实例方法
 
 class ListNode:
     def __init__(self, value: Any = None) -> None:
@@ -71,7 +71,7 @@ class ListNode:
         return vals
 
     @classmethod
-    def create(cls,node_num: int, values: list = list(),*,default=None) -> "ListNode":
+    def create(cls,node_num: int, values: list = list(),*,default=None) -> "ListNode":#TEST
         while len(values) < node_num:
             values.append(default)
         first_node = ListNode(values[0])
@@ -83,7 +83,7 @@ class ListNode:
         return first_node
 
     @classmethod
-    def createByArray(cls,values: list) -> "ListNode":
+    def createByArray(cls,values: list) -> "ListNode":#TEST
         return ListNode.create(len(values), values)
 
 class TreeNode:
