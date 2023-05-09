@@ -1,6 +1,6 @@
 from typing import Any, List, Union
 
-__version__ = "3.5.5"
+__version__ = "3.5.8"
 
 
 class ListNode:
@@ -42,12 +42,12 @@ class ListNode:
     def __add__(self, other:"ListNode") -> "ListNode":
         _left = ListNode.tolist(self)
         _right = ListNode.tolist(other)
-        return ListNode.createByList(_left+_right)
+        return ListNode.createByArray(_left+_right)
 
     def __sub__(self, other:"ListNode") -> "ListNode":
         _left = ListNode.tolist(self)
         _right = ListNode.tolist(other)
-        return ListNode.createByList([x for x in _left if x not in _right])
+        return ListNode.createByArray([x for x in _left if x not in _right])
 
     def delete(self) -> "ListNode":
         _node = None
@@ -70,8 +70,8 @@ class ListNode:
             vals.append(next.val)
         return vals
 
-    @staticmethod
-    def create(node_num: int, values: list = list(),*,default=None) -> "ListNode":
+    @classmethod
+    def create(cls,node_num: int, values: list = list(),*,default=None) -> "ListNode":
         while len(values) < node_num:
             values.append(default)
         first_node = ListNode(values[0])
@@ -82,8 +82,8 @@ class ListNode:
             up_node = new_node
         return first_node
 
-    @staticmethod
-    def createByList(values: list) -> "ListNode":
+    @classmethod
+    def createByArray(cls,values: list) -> "ListNode":
         return ListNode.create(len(values), values)
 
 class TreeNode:
@@ -120,8 +120,8 @@ class TreeNode:
         self.__dict__[__name] = __value
         return
 
-    @staticmethod
-    def create(levels: int, values: Union[list, None] = None, child: Union[List[int], None] = None,*,default = None) -> "TreeNode":
+    @classmethod
+    def create(cls,levels: int, values: Union[list, None] = None, child: Union[List[int], None] = None,*,default = None) -> "TreeNode":#TEST
         '''
         Args:
             levels: The level of new TreeNode
@@ -144,8 +144,8 @@ class TreeNode:
                     up_node.next.append(TreeNode())
         return first_node
 
-    @staticmethod
-    def createByList(values: list) -> "TreeNode":
+    @classmethod
+    def createByArray(cls,values: list) -> "TreeNode":#TEST
         return TreeNode.create(len(values), values)
 
     def __str__(self):
@@ -216,7 +216,7 @@ class NetNode:
     def __str__(self) -> str:
         return f"NetNode(val:{self.val},next:{self.next},up:{self.up},defaultLength:{self._defaultLength})"
 
-    @staticmethod
+    @classmethod#TEST
     def create(Nodes: int, values: list, all_next: list, lengths: Union[list, None] = None, defaultLength: Union[int, None] = 1) -> "NetNode":
         if lengths is None:
             lengths = list()
@@ -232,3 +232,5 @@ class NetNode:
             new_node.next = {nextNode: length for nextNode,
                              length in zip(all_next[node], lengths[node])}
         return first_node
+
+    #TODO createByArray
