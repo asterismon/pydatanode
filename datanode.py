@@ -1,18 +1,39 @@
-from typing import Any, List, Union
+from typing import Any, Iterator
 
-__version__ = "3.5.8"
-#TODO 检查有无方法应为类方法而非实例方法
+__version__ = "3.6.17"
+
+error_level = 0
+
+
+def level(level: int) -> None:
+    global error_level
+    """
+    Change the error level of all ListNodes and TreeNodes.
+    Args:
+        level: 
+            0:Error
+            1:Warning
+            2:No output.
+        Defaults to 0.
+    """
+    error_level = level
+    return
+
 
 class ListNode:
-    def __init__(self, value: Any = None) -> None:
+    class ListNodeInterrupt(Exception):
+        pass
+
+    def __init__(self, value: Any = None, level: int = error_level) -> None:
         self.val: Any = value
-        self.next: Union[ListNode, None] = None
-        self.up: Union[ListNode, None] = None
+        self.next: ListNode | None = None
+        self.prev: ListNode | None = None
+        self.level = level
         return
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator:
         class __ListNode_Iter:
-            def __init__(self, value: Union[ListNode, None]):
+            def __init__(self, value: ListNode | None):
                 self.current_value = value
 
             def __next__(self):
@@ -23,47 +44,48 @@ class ListNode:
 
             def __iter__(self):
                 return self
+
         return __ListNode_Iter(self)
 
-    def __setattr__(self, __name, __value) -> None:
-        if __name == 'next' and __value is not None:
+    def __setattr__(self, __name: str, __value: "ListNode" | Any) -> None:
+        if __name == "next" and __value is not None:
             try:
-                __value.up = self
+                __value.prev = self
             except:
-                raise TypeError(f'{type(__value)} is not supported')
+                raise TypeError(f"{type(__value)} is not supported")
         self.__dict__[__name] = __value
         return
 
-    def __str__(self) -> str:
-        next_doc = f"<ListNode id={id(self.next)}>" if self.next is not None else "None"
-        up_doc = f"<ListNode id={id(self.up)}>" if self.up is not None else "None"
-        return f'ListNode(value:{self.val} , next:{next_doc} , up:{up_doc})'
+    def __repr__(self) -> str:
+        return f"ListNode(value:{self.val} , next:{self.next} , prev:{self.prev})"
 
-    def __add__(self, other:"ListNode") -> "ListNode":
-        _left = ListNode.tolist(self)
-        _right = ListNode.tolist(other)
-        return ListNode.createByArray(_left+_right)
+    def merge(self, other: "ListNode") -> "ListNode":
+        if self.next or other.prev:
+            if self.level == 0:
+                raise ListNode.ListNodeInterrupt()
+            elif self.level == 1:
+                print(f"Warning:ListNode Interrupted.left:{self},right:{other}")
+            elif self.level == 2:
+                pass
+        self.next = other
+        return self
 
-    def __sub__(self, other:"ListNode") -> "ListNode":
-        _left = ListNode.tolist(self)
-        _right = ListNode.tolist(other)
-        return ListNode.createByArray([x for x in _left if x not in _right])
-
-    def delete(self) -> "ListNode":
+    def delSelf(self) -> "ListNode" | None:
         _node = None
-        if self.up is not None:
-            self.up.next = self.next
+        if self.prev is not None:
+            self.prev.next = self.next
             if self.next is not None:
                 _node = self.next
             else:
-                _node = self.up
+                _node = self.prev
         else:
-            self.next.up = None
+            if self.next is not None:
+                self.next.prev = None
             _node = self.next
         del self
         return _node
 
-    def tolist(self) -> list:
+    def toList(self) -> list:
         next = self.next
         vals = list(self.val)
         while next:
@@ -71,166 +93,158 @@ class ListNode:
         return vals
 
     @classmethod
-    def create(cls,node_num: int, values: list = list(),*,default=None) -> "ListNode":#TEST
+    def create(
+        cls, node_num: int, values: list = list(), *, default=None
+    ) -> "ListNode":  # TEST
         while len(values) < node_num:
             values.append(default)
         first_node = ListNode(values[0])
-        up_node = first_node
+        prev_node = first_node
         for val in range(1, node_num):
             new_node = ListNode(values[val])
-            up_node.next = new_node
-            up_node = new_node
+            prev_node.next = new_node
+            prev_node = new_node
         return first_node
 
     @classmethod
-    def createByArray(cls,values: list) -> "ListNode":#TEST
+    def createByArray(cls, values: list) -> "ListNode":  # TEST
         return ListNode.create(len(values), values)
+
+    def delAfter(self) -> None:
+        node = self
+        while node.next is not None:
+            node = node.next
+            del node.prev
+        else:
+            del node
+        return
+
 
 class TreeNode:
     def __init__(self, value=None) -> None:
         self.val = value
-        self.next: list[TreeNode] = []
-        self.up: Union[TreeNode, None] = None
+        self.parent: TreeNode | None = None
+        self.children: list[TreeNode] = []
         return
 
     @property
     def childnum(self) -> int:
-        return len(self.next)
+        return len(self.children)
 
     def delNode(self, index: int) -> "TreeNode":
-        self.next = self.next[:index]+self.next[index+1:]
+        if self.children is not None:
+            self.children[index].parent = None
+            self.children.pop(index)
         return self
 
-    def __setattr__(self, __name, __value) -> None:
-        if __name == 'next' and len(__value) != 0:
-            try:
-                for node in __value:
-                    try:
-                        node.up = self
-                        self.next.append(node)
-                    except:
-                        raise TypeError(f'{type(__value)} is not supported')
-            except:
-                try:
-                    __value.up = self
-                    self.next.append(__value)
-                except:
-                    raise TypeError(f'{type(__value)} is not supported')
-            self._nodes = len(self.next)
+    def __setattr__(self, __name: str, __value: dict["TreeNode", int] | Any) -> None:
+        if __name == "next" and len(__value) != 0:
+            for node in __value:
+                node.parent = self
+                self.children.append(node)
         self.__dict__[__name] = __value
         return
 
     @classmethod
-    def create(cls,levels: int, values: Union[list, None] = None, child: Union[List[int], None] = None,*,default = None) -> "TreeNode":#TEST
-        '''
+    def create(
+        cls,
+        levels: int,
+        values: list | None = None,
+        child: list[int] | None = None,
+        *,
+        default=None,
+    ) -> "TreeNode":  # TEST
+        """
         Args:
             levels: The level of new TreeNode
             child: list of node num.
                     Defaults to None.
             values: list of node value.MUST be a two-tier iterable like [HEAD,[level1_node1,level1_node2],[level2_node1,level2_node2]].
                     Defaults to None.
-        '''
+        """
         if child is None:
-            child = [0]*len(levels)
+            child = [0] * levels
         if values is None:
-            values = [[default]*child[level] for level in range(levels)]
+            values = [[default] * child[level] for level in range(levels)]
         first_node = TreeNode(values[0])
-        up_node = first_node
+        prev_node = first_node
         for level in range(1, levels):
             for node_val in values[level]:
                 new_node = TreeNode(node_val)
-                up_node.next.append(new_node)
-                if len(up_node.next) < child[level-1]:
-                    up_node.next.append(TreeNode())
+                prev_node.children.append(new_node)
+                if len(prev_node.children) < child[level - 1]:
+                    prev_node.children.append(TreeNode())
         return first_node
 
     @classmethod
-    def createByArray(cls,values: list) -> "TreeNode":#TEST
+    def createByArray(cls, values: list) -> "TreeNode":  # TEST
         return TreeNode.create(len(values), values)
 
-    def __str__(self):
-        up_doc = f"<TreeNode id={id(self.up)}>" if self.up is not None else "None"
-        return f'TreeNode(value:{self.val} , next:{self.nodes} node(s) , up:{up_doc})'
+    def __repr__(self):
+        return f"TreeNode(value:{self.val} , next:{len(self.children)} children, prev:{self.parent})"
 
-    @staticmethod
-    def depth_priority(Node: "TreeNode", value: Any, max_depth: Union[int, None]) -> Union["TreeNode", None]:
-        if Node.val == value:
-            return Node
-
-        def __depth_priority(Node, value, max_depth, __now_depth):
-            for node in Node.next:
-                if node.val == value:
-                    return node
-                if node.next:
-                    rst = __depth_priority(node, value, max_depth, __now_depth)
-                    if rst is not None:
-                        return rst
+    def delChildren(self) -> None:
+        def __delChildren(node: "TreeNode", HEAD: "TreeNode") -> None:
+            for node in node.children:
+                __delChildren(node, HEAD)
             else:
-                return None
-        return __depth_priority(Node, value, max_depth, 0)
-
-    @staticmethod
-    def breadth_priority(Node: "TreeNode", value: Any, max_depth: Union[int, None] = None) -> Union["TreeNode", None]:
-        if Node.val == value:
-            return Node
-
-        def __breadth_priority(node_list: List[TreeNode], value, max_depth, __now_depth):
-            if max_depth is not None:
-                if __now_depth >= max_depth:
-                    return None
-            child: list[TreeNode] = []
-            if len(node_list) == 0:
-                return None
-            for node in node_list:
-                if node.val == value:
-                    return node
+                if node is not HEAD:
+                    del node
                 else:
-                    child += node.next
-                    continue
-            else:
-                return __breadth_priority(child, value, max_depth, __now_depth := __now_depth+1)
-        return __breadth_priority(Node.next, value, max_depth, 0)
+                    node.children = list()
+
+        return __delChildren(self, self) if len(self.children) != 0 else None
 
 
 class NetNode:
     def __init__(self, val=None, defaultLength=1) -> None:
         self.val = val
         self.next: dict[NetNode, int] = {}
-        self.up: dict[NetNode, int] = {}
+        self.prev: dict[NetNode, int] = {}
         self._defaultLength = defaultLength
 
-    def __setattr__(self, __name, __value):
+    def __setattr__(self, __name: str, __value: dict["NetNode", int] | Any):
         if __name == "next" and __value != {}:
             for node, length in __value.items():
-                node.up[self] = length
+                node.prev[self] = length
         self.__dict__[__name] = __value
 
-    def add(self, Node, length: Union[int, None] = None, force=False) -> bool:
+    def add(self, Node: "NetNode", length: int | None = None, force=False) -> bool:
         if Node in self.next and not force:
             return False
         length = length if length is not None else self._defaultLength
         self.next[Node] = length
-        Node.up[self] = length
+        Node.prev[self] = length
         return True
 
-    def __str__(self) -> str:
-        return f"NetNode(val:{self.val},next:{self.next},up:{self.up},defaultLength:{self._defaultLength})"
+    def __repr__(self) -> str:
+        return f"NetNode(val:{self.val},next:{self.next},prev:{self.prev},defaultLength:{self._defaultLength})"
 
-    @classmethod#TEST
-    def create(Nodes: int, values: list, all_next: list, lengths: Union[list, None] = None, defaultLength: Union[int, None] = 1) -> "NetNode":
+    @classmethod  # TEST
+    def create(
+        cls,
+        Nodes: int,
+        values: list,
+        all_next: list,
+        lengths: list | None = None,
+        defaultLength: int | None = 1,
+    ) -> "NetNode":
         if lengths is None:
             lengths = list()
         while len(lengths) < Nodes:
             lengths.append(defaultLength)
         first_node = NetNode(values[0])
-        first_node.next = {nextNode: length for nextNode,
-                           length in zip(all_next[0], lengths[0])}
+        first_node.next = {
+            nextNode: length for nextNode, length in zip(all_next[0], lengths[0])
+        }
         for node in range(1, Nodes):
             new_node = NetNode()
             new_node.val = values[node]
             new_node._defaultLength = defaultLength
-            new_node.next = {nextNode: length for nextNode,
-                             length in zip(all_next[node], lengths[node])}
+            new_node.next = {
+                nextNode: length
+                for nextNode, length in zip(all_next[node], lengths[node])
+            }
         return first_node
 
-    #TODO createByArray
+    # TODO createByArray
