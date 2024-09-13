@@ -1,6 +1,6 @@
 from typing import Any, Iterator
 
-__version__ = "3.6.17"
+__version__ = "0.3.17"
 
 error_level = 0
 
